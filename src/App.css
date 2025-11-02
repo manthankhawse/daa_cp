@@ -156,3 +156,26 @@ button:disabled {
     border-radius: 4px;
     padding: 10px;
 }
+
+.controls-container select {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+  background-color: white;
+}
+
+/* Add these styles to the end of App.css */
+
+/* This allows the node labels (e.g., "A (h: 1, e: 5)") to wrap correctly */
+.react-flow__node {
+  white-space: pre-wrap !important;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* This makes the node highlight (border, background) animate smoothly */
+.react-flow__node-default, .react-flow__node-input, .react-flow__node-output {
+  transition: border 0.3s ease, background-color 0.3s ease;
+}

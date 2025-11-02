@@ -1,15 +1,18 @@
-import React, { useState, useMemo, useCallback } from 'react'; // Import useCallback
+import React, { useState, useMemo } from 'react'; // Removed unused useCallback
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
-  useNodesState, // 1. Import useNodesState
-  useEdgesState, // 2. Import useEdgesState
-  MarkerType,    // 3. Import MarkerType for arrows
+  useNodesState,
+  useEdgesState,
+  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './App.css';
 import { runFordFulkerson } from '../utils/fordFulkerson';
+import { runDinic } from '../utils/dinic';
+// --- KEY CHANGE: Import Push-Relabel ---
+import { runPushRelabel } from '../utils/pushRelabel';
 
 const defaultGraphInput = `s,a,10
 s,b,10
@@ -27,11 +30,10 @@ function FordFulkersonViz() {
   const [errorMessage, setErrorMessage] = useState('');
   const [currentStep, setCurrentStep] = useState(-1);
 
-  // --- KEY CHANGE: Use reactflow's state hooks ---
-  // These hooks enable interactivity like dragging.
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState('fordFulkerson');
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  // --- END KEY CHANGE ---
 
   const handleGenerateGraph = () => {
     setAlgorithmSteps([]);
@@ -49,15 +51,13 @@ function FordFulkersonViz() {
         setErrorMessage(`Invalid edge format: "${line}".`);
         return;
       }
-      // --- KEY CHANGE: Add markerEnd for directed edges ---
       parsedEdges.push({
         id: `${source}-${target}`,
         source,
         target,
         data: { capacity, flow: 0 },
-        markerEnd: { type: MarkerType.ArrowClosed }, // Add this for arrows
+        markerEnd: { type: MarkerType.ArrowClosed },
       });
-      // --- END KEY CHANGE ---
       nodeSet.add(source);
       nodeSet.add(target);
     }
@@ -80,69 +80,176 @@ function FordFulkersonViz() {
         x = 150 * col;
         y = 100 * row;
       }
+      // --- KEY CHANGE: Store originalLabel for resetting ---
+      const label = id === 's' ? 's (Source)' : id === 't' ? 't (Sink)' : id.toUpperCase();
       return {
         id,
         position: { x, y },
-        data: { label: id === 's' ? 's (Source)' : id === 't' ? 't (Sink)' : id.toUpperCase() },
+        data: { label: label, originalLabel: label },
         type: id === 's' ? 'input' : id === 't' ? 'output' : 'default',
       };
+      // --- END KEY CHANGE ---
     });
+    
+    const algoInputEdges = parsedEdges.map(e => ({...e.data, source: e.source, target: e.target}));
+    let steps = [];
 
-    const steps = runFordFulkerson(nodeIds, parsedEdges.map(e => ({...e.data, source: e.source, target: e.target})), 's', 't');
+    switch (selectedAlgorithm) {
+      case 'dinic':
+        steps = runDinic(nodeIds, algoInputEdges, 's', 't');
+        break;
+      // --- KEY CHANGE: Add Push-Relabel case ---
+      case 'pushRelabel':
+        steps = runPushRelabel(nodeIds, algoInputEdges, 's', 't');
+        break;
+      case 'fordFulkerson':
+      default:
+        steps = runFordFulkerson(nodeIds, algoInputEdges, 's', 't');
+        break;
+    }
+    // --- END KEY CHANGE ---
 
-    // Use the setters from the hooks
     setNodes(generatedNodes);
     setInitialEdges(parsedEdges);
     setAlgorithmSteps(steps);
   };
 
-  // --- KEY CHANGE: useMemo is now used to update the edges state via setEdges ---
+  // --- KEY CHANGE: This hook now ONLY updates NODES ---
+  useMemo(() => {
+    // This hook updates node labels/styles for Push-Relabel
+    if (selectedAlgorithm === 'pushRelabel') {
+      let stepData;
+      if (currentStep >= 0 && currentStep < algorithmSteps.length) {
+        stepData = algorithmSteps[currentStep];
+      }
+
+      setNodes(prevNodes => prevNodes.map(node => {
+        // --- FIX 1: Check if stepData *and* stepData.nodeData exist ---
+        const data = (stepData && stepData.nodeData) ? stepData.nodeData[node.id] : null;
+        const originalLabel = node.data.originalLabel;
+        
+        if (!data || currentStep < 0) { // Before algo starts or on reset
+          return { ...node, data: { ...node.data, label: originalLabel }, style: {} };
+        }
+
+        // Format excess: show '∞' for source at init, '0' for others
+        let excessStr = data.excess;
+        if (node.id === 's' && stepData.type === 'init') excessStr = '∞';
+        if (data.excess < 0) excessStr = '0'; // Source excess becomes negative, show 0
+        
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            label: `${originalLabel}\n(h: ${data.height}, e: ${excessStr})`
+          },
+          // Highlight the node being pushed from or relabeled
+          style: node.id === stepData.activeNode ? 
+                 { border: '3px solid #FF0072', background: '#fff0f0' } : 
+                 {}
+        };
+      }));
+      
+    } else {
+      // Reset nodes if switching *away* from push-relabel
+      setNodes(prevNodes => prevNodes.map(node => ({
+        ...node,
+        data: { ...node.data, label: node.data.originalLabel },
+        style: {}
+      })));
+    }
+  }, [currentStep, algorithmSteps, setNodes, selectedAlgorithm]); // Added setNodes/selectedAlgorithm
+  // --- END KEY CHANGE ---
+
+
+  // --- KEY CHANGE: This hook now ONLY updates EDGES ---
   useMemo(() => {
     if (initialEdges.length === 0) {
-      setEdges([]); // Clear edges if graph is reset
+      setEdges([]); 
       return;
     }
 
     let stepData;
     if (currentStep >= 0 && currentStep < algorithmSteps.length) {
       stepData = algorithmSteps[currentStep];
+    } else {
+      // Reset to initial state
+      setEdges(initialEdges.map(e => ({...e, label: `0 / ${e.data.capacity}`, style: {}, animated: false})));
+      return;
     }
 
-    const updatedEdges = initialEdges.map(edge => {
-      const newEdge = { ...edge, style: {}, animated: false };
-      const currentFlow = stepData ? (stepData.edgeFlows[edge.id] || 0) : 0;
-      
-      newEdge.label = `${currentFlow} / ${edge.data.capacity}`;
-      
-      if (stepData?.path.length > 0) {
-        for (let i = 0; i < stepData.path.length - 1; i++) {
-          if (newEdge.source === stepData.path[i] && newEdge.target === stepData.path[i+1]) {
-            newEdge.style = { stroke: '#FF0072', strokeWidth: 3 };
-            newEdge.animated = true;
+    // --- PUSH-RELABEL LOGIC FOR EDGES ---
+    if (selectedAlgorithm === 'pushRelabel') {
+      const updatedEdges = initialEdges.map(edge => {
+          const newEdge = { ...edge, style: {}, animated: false };
+          // --- FIX 2: Check if stepData *and* stepData.edgeFlows exist ---
+          const currentFlow = (stepData && stepData.edgeFlows) ? (stepData.edgeFlows[edge.id] || 0) : 0;
+          newEdge.label = `${currentFlow} / ${edge.data.capacity}`;
+          newEdge.style = (currentFlow === edge.data.capacity) ? { stroke: '#cccccc' } : {};
+          
+          // Highlight the edge being pushed
+          // --- FIX 3: Check if stepData exists before accessing pushEdge ---
+          if (stepData && edge.id === stepData.pushEdge) {
+              newEdge.style = { ...newEdge.style, stroke: '#FF0072', strokeWidth: 3 };
+              newEdge.animated = true;
+          }
+          newEdge.markerEnd = { type: MarkerType.ArrowClosed };
+          return newEdge;
+      });
+      setEdges(updatedEdges);
+    } 
+    // --- PATH-BASED LOGIC FOR EDGES ---
+    else {
+      const updatedEdges = initialEdges.map(edge => {
+        const newEdge = { ...edge, style: {}, animated: false };
+        // We can safely assume edgeFlows exists for path-based algos
+        const currentFlow = stepData ? (stepData.edgeFlows[edge.id] || 0) : 0;
+        newEdge.label = `${currentFlow} / ${edge.data.capacity}`;
+        
+        if (stepData?.path.length > 0) {
+          const isPhase = Array.isArray(stepData.path[0]);
+          if (isPhase) {
+            for (const path of stepData.path) {
+              for (let i = 0; i < path.length - 1; i++) {
+                if (newEdge.source === path[i] && newEdge.target === path[i+1]) {
+                  newEdge.style = { stroke: '#FF0072', strokeWidth: 3 };
+                  newEdge.animated = true;
+                }
+              }
+            }
+          } else {
+            const path = stepData.path;
+            for (let i = 0; i < path.length - 1; i++) {
+              if (newEdge.source === path[i] && newEdge.target === path[i+1]) {
+                newEdge.style = { stroke: '#FF0072', strokeWidth: 3 };
+                newEdge.animated = true;
+              }
+            }
           }
         }
-      }
 
-      if (currentFlow === edge.data.capacity) {
-        newEdge.style = { ...newEdge.style, stroke: '#cccccc' };
-      }
-      
-      // Ensure the arrow marker is always present
-      newEdge.markerEnd = { type: MarkerType.ArrowClosed };
-
-      return newEdge;
-    });
-
-    setEdges(updatedEdges); // Update the edges state for React Flow
-  }, [currentStep, initialEdges, algorithmSteps, setEdges]);
+        if (currentFlow === edge.data.capacity) {
+          newEdge.style = { ...newEdge.style, stroke: '#cccccc' };
+        }
+        newEdge.markerEnd = { type: MarkerType.ArrowClosed };
+        return newEdge;
+      });
+      setEdges(updatedEdges);
+    }
+  }, [currentStep, initialEdges, algorithmSteps, setEdges, selectedAlgorithm]); // Added selectedAlgorithm
   // --- END KEY CHANGE ---
+
 
   const maxFlow = useMemo(() => {
     if (currentStep < 0 || algorithmSteps.length === 0) return 0;
-    return algorithmSteps
-      .slice(0, currentStep + 1)
-      .reduce((sum, step) => sum + step.pathFlow, 0);
-  }, [currentStep, algorithmSteps]);
+    const currentStepData = algorithmSteps[currentStep];
+    if (!currentStepData || !currentStepData.edgeFlows) return 0; // Defensive check
+    
+    // This calculation works for all algorithms
+    return initialEdges
+        .filter(e => e.source === 's')
+        .reduce((sum, e) => sum + (currentStepData.edgeFlows[e.id] || 0), 0);
+  }, [currentStep, algorithmSteps, initialEdges]);
 
   const handleNext = () => setCurrentStep(prev => Math.min(prev + 1, algorithmSteps.length - 1));
   const handlePrev = () => setCurrentStep(prev => Math.max(prev - 1, -1));
@@ -153,12 +260,11 @@ function FordFulkersonViz() {
   return (
     <div className="app-container">
       <header className="header">
-        <h1>Ford-Fulkerson Algorithm Visualization 💡</h1>
-        <p>Enter an edge list and see the algorithm find the maximum flow step-by-step.</p>
+        <h1>Max-Flow Algorithm Visualization 💡</h1>
+        <p>Compare max-flow algorithms step-by-step.</p>
       </header>
       <div className="main-content">
         <div className="graph-container">
-          {/* --- KEY CHANGE: Pass the state handlers to ReactFlow --- */}
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -166,13 +272,25 @@ function FordFulkersonViz() {
             onEdgesChange={onEdgesChange}
             fitView
           >
-          {/* --- END KEY CHANGE --- */}
             <MiniMap />
             <Controls />
             <Background />
           </ReactFlow>
         </div>
         <div className="controls-container">
+          
+          <h2>Algorithm</h2>
+          <select 
+            value={selectedAlgorithm} 
+            onChange={(e) => setSelectedAlgorithm(e.target.value)}
+          >
+            <option value="fordFulkerson">Ford-Fulkerson (BFS)</option>
+            <option value="dinic">Dinic's Algorithm</option>
+            {/* --- KEY CHANGE: Add Push-Relabel --- */}
+            <option value="pushRelabel">Push-Relabel</option>
+            {/* --- END KEY CHANGE --- */}
+          </select>
+          
           <h2>Graph Input</h2>
           <div className="input-area">
             <textarea
