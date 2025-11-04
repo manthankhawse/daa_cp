@@ -1,0 +1,137 @@
+/*
+ * src/pages/ComparePage.css
+ * Styles for the side-by-side comparison page.
+ */
+
+.compare-page-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px); /* Full height minus navbar */
+  background-color: #f4f7f6;
+}
+
+/* ----------------------------- */
+/* Control Bar Styles */
+/* ----------------------------- */
+
+.compare-controls-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-bottom: 2px solid #e0e0e0;
+  gap: 1.5rem;
+}
+
+.compare-input-area {
+  flex: 2;
+  display: flex;
+  gap: 1rem;
+}
+
+.compare-input-area textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #bdc3c7;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.compare-generate-btn {
+  padding: 0 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background-color: #27ae60;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.compare-generate-btn:hover:not(:disabled) {
+  background-color: #229954;
+}
+.compare-generate-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.compare-step-controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.compare-step-controls button {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background-color: #3498db;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.compare-step-controls button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+.compare-step-controls button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+.compare-step-controls .reset-btn {
+  background-color: #e74c3c;
+}
+.compare-step-controls .reset-btn:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+.step-counter {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  padding: 0 0.5rem;
+  min-width: 60px;
+  text-align: center;
+}
+
+.compare-error-msg {
+  color: #c0392b;
+  font-weight: bold;
+  margin: 0;
+  padding: 0.5rem;
+}
+
+/* ----------------------------- */
+/* Visualization Area Styles */
+/* ----------------------------- */
+
+.compare-viz-area {
+  display: flex;
+  flex-grow: 1;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: #bdc3c7;
+  overflow: hidden; /* Important for flex children */
+}
+
+.viz-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #ecf0f1;
+  border-radius: 8px;
+}
+.viz-placeholder h2 {
+  color: #7f8c8d;
+  font-weight: 300;
+}
