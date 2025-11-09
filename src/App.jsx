@@ -15,6 +15,7 @@ import LearnIntro from './pages/learn/LearnIntro';
 import FordFulkersonInfo from './pages/learn/FordFulkersonInfo';
 import DinicInfo from './pages/learn/DinicInfo';
 import PushRelabelInfo from './pages/learn/PushRelabelInfo';
+import MPMInfo from './pages/learn/MPMInfo';
 // --- END KEY CHANGES ---
 
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="ford-fulkerson" element={<FordFulkersonInfo />} />
             <Route path="dinic" element={<DinicInfo />} />
             <Route path="push-relabel" element={<PushRelabelInfo />} />
+            <Route path="MPM" element={<MPMInfo/>}/>
           </Route>
           {/* --- END KEY CHANGE --- */}
 

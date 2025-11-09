@@ -31,6 +31,9 @@ function LearnPage() {
             <NavLink to="/learn/push-relabel">
               Push-Relabel
             </NavLink>
+            <NavLink to="/learn/MPM">
+              MPM
+            </NavLink>
           </li>
         </ul>
       </nav>

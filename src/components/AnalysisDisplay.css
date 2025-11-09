@@ -1,0 +1,115 @@
+/*
+ * src/components/AnalysisDisplay.css
+ * Styles for the deep-dive analysis section.
+ */
+
+.compare-analysis-area {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-top: 2px solid #bdc3c7;
+  padding: 1.5rem;
+  min-height: 240px; /* Give it a minimum height */
+  overflow-y: auto;
+  display: flex;
+  gap: 2rem;
+}
+
+.compare-analysis-area.placeholder {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  padding-top: 4rem;
+}
+
+.analysis-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.analysis-column:first-child {
+  flex: 1; /* Graph properties & verdict */
+  border-right: 1px solid #e0e0e0;
+  padding-right: 2rem;
+}
+
+.analysis-column.report-cards {
+  flex: 2; /* Algorithm report cards */
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.compare-analysis-area h3 {
+  font-size: 1.3rem;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.analysis-stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.analysis-stats li {
+  font-size: 1rem;
+  color: #34495e;
+  margin-bottom: 0.5rem;
+}
+
+.verdict-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #2c3e50;
+  font-style: italic;
+  background: #f4f7f6;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+/* Report Card Styling */
+.analysis-card {
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.analysis-card.winner {
+  background: #e6f7ee;
+  border-color: #27ae60;
+}
+
+.analysis-card h4 {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin: 0 0 0.75rem 0;
+  text-align: center;
+}
+
+.analysis-card .analysis-text {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+  flex-grow: 1; /* Makes cards equal height */
+}
+
+.analysis-card .analysis-text.good {
+  color: #229954;
+}
+
+.analysis-card .analysis-text.bad {
+  color: #c0392b;
+}
+
+.analysis-card .analysis-stats {
+  border-top: 1px dashed #bdc3c7;
+  padding-top: 0.75rem;
+}
+.analysis-card .analysis-stats li {
+  font-size: 0.9rem;
+}

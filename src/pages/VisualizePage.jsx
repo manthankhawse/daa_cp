@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'; // Removed unused useCallback
+import React, { useState, useMemo } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -8,34 +8,149 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import './VisualizePage.css';
-import { runFordFulkerson } from '../../utils/fordFulkerson'
+import './VisualizePage.css'; // We will update this CSS
+import { runFordFulkerson } from '../../utils/fordFulkerson';
 import { runDinic } from '../../utils/dinic';
-// --- KEY CHANGE: Import Push-Relabel ---
 import { runPushRelabel } from '../../utils/pushRelabel';
 
-
-const defaultGraphInput = `s,a,10
+const presetGraphs = {
+  "default": `s,a,10
 s,b,10
 a,c,4
 a,d,8
 b,d,9
 c,t,10
 d,c,6
-d,t,10`;
+d,t,10`,
+  "ff-worst-case": `s,a,1000000
+s,b,1000000
+a,b,1
+a,t,1000000
+b,t,1000000`,
+  "dense-graph": `s,a,10
+s,b,10
+s,c,10
+a,d,5
+a,e,5
+b,d,5
+b,e,5
+c,d,5
+c,e,5
+d,t,15
+e,t,15`,
+};
+
+// (AlgorithmContext and LiveStats components remain identical to before)
+const AlgorithmContext = ({ algorithm }) => {
+  const content = useMemo(() => {
+    switch (algorithm) {
+      case 'fordFulkerson':
+        return {
+          title: 'Ford-Fulkerson (BFS)',
+          description: 'Strategy: Finds one augmenting path at a time using a Breadth-First Search (BFS). It looks for the "shortest" path (by edge count) in the residual graph.'
+        };
+      case 'dinic':
+        return {
+          title: 'Dinic\'s Algorithm',
+          description: 'Strategy: A faster, "batched" approach. It works in phases, finding *all* shortest paths at once using a "Level Graph" and then finding a "Blocking Flow".'
+        };
+      case 'pushRelabel':
+        return {
+          title: 'Push-Relabel',
+          description: 'Strategy: A "local" algorithm. It floods the graph from the source and "pushes" flow downhill based on node "heights". It doesn\'t find paths at all.'
+        };
+      default:
+        return {};
+    }
+  }, [algorithm]);
+
+  return (
+    <div className="info-box algo-context">
+      <h3>{content.title}</h3>
+      <p>{content.description}</p>
+    </div>
+  );
+};
+
+const LiveStats = ({ steps, currentStep, algorithm }) => {
+  const stats = useMemo(() => {
+    const stepsSoFar = steps.slice(0, currentStep + 1);
+    if (stepsSoFar.length === 0) return null;
+
+    if (algorithm === 'fordFulkerson') {
+      return (
+        <li><strong>Augmenting Paths:</strong> {stepsSoFar.length}</li>
+      );
+    }
+    
+    if (algorithm === 'dinic') {
+      const lastStep = stepsSoFar[stepsSoFar.length - 1];
+      const phase = lastStep?.description.match(/Phase (\d+)/)?.[1] || 1;
+      return (
+        <>
+          <li><strong>Current Phase:</strong> {phase}</li>
+          <li><strong>Total Paths Found:</strong> {stepsSoFar.length}</li>
+        </>
+      );
+    }
+
+    if (algorithm === 'pushRelabel') {
+      const pushes = stepsSoFar.filter(s => s.type === 'push').length;
+      const relabels = stepsSoFar.filter(s => s.type === 'relabel').length;
+      return (
+        <>
+          <li><strong>Total Pushes:</strong> {pushes}</li>
+          <li><strong>Total Relabels:</strong> {relabels}</li>
+        </>
+      );
+    }
+    return null;
+  }, [steps, currentStep, algorithm]);
+
+  if (!stats) return null;
+  
+  return (
+    <div className="info-box live-stats">
+      <h3>Live Statistics</h3>
+      <ul>{stats}</ul>
+    </div>
+  );
+};
+
 
 function VisualizePage() {
-  const [userInput, setUserInput] = useState(defaultGraphInput);
+  const [userInput, setUserInput] = useState(presetGraphs["default"]);
   const [initialEdges, setInitialEdges] = useState([]);
   const [algorithmSteps, setAlgorithmSteps] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentStep, setCurrentStep] = useState(-1);
-
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('fordFulkerson');
+  const [selectedPreset, setSelectedPreset] = useState('default'); // Default preset
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // --- KEY UX CHANGE: Updated logic ---
+  const handlePresetChange = (e) => {
+    const presetName = e.target.value;
+    setSelectedPreset(presetName);
+    
+    // If the user selects a preset, update the text and lock the box.
+    if (presetName !== 'custom') {
+      setUserInput(presetGraphs[presetName]);
+    }
+    // If they select "custom", the box is just unlocked. We don't change the text.
+  };
+
+  // --- KEY UX CHANGE: This handler is now much simpler ---
+  const handleTextareaChange = (e) => {
+    // This handler will only be called if the box is NOT readOnly
+    // (i.e., selectedPreset is 'custom')
+    setUserInput(e.target.value);
+  };
+
+  // (handleGenerateGraph and the useMemo/logic hooks are all unchanged)
+  // ...
   const handleGenerateGraph = () => {
     setAlgorithmSteps([]);
     setCurrentStep(-1);
@@ -81,7 +196,6 @@ function VisualizePage() {
         x = 150 * col;
         y = 100 * row;
       }
-      // --- KEY CHANGE: Store originalLabel for resetting ---
       const label = id === 's' ? 's (Source)' : id === 't' ? 't (Sink)' : id.toUpperCase();
       return {
         id,
@@ -89,7 +203,6 @@ function VisualizePage() {
         data: { label: label, originalLabel: label },
         type: id === 's' ? 'input' : id === 't' ? 'output' : 'default',
       };
-      // --- END KEY CHANGE ---
     });
     
     const algoInputEdges = parsedEdges.map(e => ({...e.data, source: e.source, target: e.target}));
@@ -99,7 +212,6 @@ function VisualizePage() {
       case 'dinic':
         steps = runDinic(nodeIds, algoInputEdges, 's', 't');
         break;
-      // --- KEY CHANGE: Add Push-Relabel case ---
       case 'pushRelabel':
         steps = runPushRelabel(nodeIds, algoInputEdges, 's', 't');
         break;
@@ -108,88 +220,65 @@ function VisualizePage() {
         steps = runFordFulkerson(nodeIds, algoInputEdges, 's', 't');
         break;
     }
-    // --- END KEY CHANGE ---
 
     setNodes(generatedNodes);
     setInitialEdges(parsedEdges);
     setAlgorithmSteps(steps);
   };
 
-  // --- KEY CHANGE: This hook now ONLY updates NODES ---
   useMemo(() => {
-    // This hook updates node labels/styles for Push-Relabel
     if (selectedAlgorithm === 'pushRelabel') {
       let stepData;
       if (currentStep >= 0 && currentStep < algorithmSteps.length) {
         stepData = algorithmSteps[currentStep];
       }
-
       setNodes(prevNodes => prevNodes.map(node => {
-        // --- FIX 1: Check if stepData *and* stepData.nodeData exist ---
         const data = (stepData && stepData.nodeData) ? stepData.nodeData[node.id] : null;
         const originalLabel = node.data.originalLabel;
-        
-        if (!data || currentStep < 0) { // Before algo starts or on reset
+        if (!data || currentStep < 0) {
           return { ...node, data: { ...node.data, label: originalLabel }, style: {} };
         }
-
-        // Format excess: show '∞' for source at init, '0' for others
         let excessStr = data.excess;
         if (node.id === 's' && stepData.type === 'init') excessStr = '∞';
-        if (data.excess < 0) excessStr = '0'; // Source excess becomes negative, show 0
-        
+        if (data.excess < 0) excessStr = '0';
         return {
           ...node,
           data: {
             ...node.data,
             label: `${originalLabel}\n(h: ${data.height}, e: ${excessStr})`
           },
-          // Highlight the node being pushed from or relabeled
           style: node.id === stepData.activeNode ? 
                  { border: '3px solid #FF0072', background: '#fff0f0' } : 
                  {}
         };
       }));
-      
     } else {
-      // Reset nodes if switching *away* from push-relabel
       setNodes(prevNodes => prevNodes.map(node => ({
         ...node,
         data: { ...node.data, label: node.data.originalLabel },
         style: {}
       })));
     }
-  }, [currentStep, algorithmSteps, setNodes, selectedAlgorithm]); // Added setNodes/selectedAlgorithm
-  // --- END KEY CHANGE ---
+  }, [currentStep, algorithmSteps, setNodes, selectedAlgorithm]);
 
-
-  // --- KEY CHANGE: This hook now ONLY updates EDGES ---
   useMemo(() => {
     if (initialEdges.length === 0) {
       setEdges([]); 
       return;
     }
-
     let stepData;
     if (currentStep >= 0 && currentStep < algorithmSteps.length) {
       stepData = algorithmSteps[currentStep];
     } else {
-      // Reset to initial state
       setEdges(initialEdges.map(e => ({...e, label: `0 / ${e.data.capacity}`, style: {}, animated: false})));
       return;
     }
-
-    // --- PUSH-RELABEL LOGIC FOR EDGES ---
     if (selectedAlgorithm === 'pushRelabel') {
       const updatedEdges = initialEdges.map(edge => {
           const newEdge = { ...edge, style: {}, animated: false };
-          // --- FIX 2: Check if stepData *and* stepData.edgeFlows exist ---
           const currentFlow = (stepData && stepData.edgeFlows) ? (stepData.edgeFlows[edge.id] || 0) : 0;
           newEdge.label = `${currentFlow} / ${edge.data.capacity}`;
           newEdge.style = (currentFlow === edge.data.capacity) ? { stroke: '#cccccc' } : {};
-          
-          // Highlight the edge being pushed
-          // --- FIX 3: Check if stepData exists before accessing pushEdge ---
           if (stepData && edge.id === stepData.pushEdge) {
               newEdge.style = { ...newEdge.style, stroke: '#FF0072', strokeWidth: 3 };
               newEdge.animated = true;
@@ -198,15 +287,11 @@ function VisualizePage() {
           return newEdge;
       });
       setEdges(updatedEdges);
-    } 
-    // --- PATH-BASED LOGIC FOR EDGES ---
-    else {
+    } else {
       const updatedEdges = initialEdges.map(edge => {
         const newEdge = { ...edge, style: {}, animated: false };
-        // We can safely assume edgeFlows exists for path-based algos
         const currentFlow = stepData ? (stepData.edgeFlows[edge.id] || 0) : 0;
         newEdge.label = `${currentFlow} / ${edge.data.capacity}`;
-        
         if (stepData?.path.length > 0) {
           const isPhase = Array.isArray(stepData.path[0]);
           if (isPhase) {
@@ -228,7 +313,6 @@ function VisualizePage() {
             }
           }
         }
-
         if (currentFlow === edge.data.capacity) {
           newEdge.style = { ...newEdge.style, stroke: '#cccccc' };
         }
@@ -237,16 +321,12 @@ function VisualizePage() {
       });
       setEdges(updatedEdges);
     }
-  }, [currentStep, initialEdges, algorithmSteps, setEdges, selectedAlgorithm]); // Added selectedAlgorithm
-  // --- END KEY CHANGE ---
-
+  }, [currentStep, initialEdges, algorithmSteps, setEdges, selectedAlgorithm]);
 
   const maxFlow = useMemo(() => {
     if (currentStep < 0 || algorithmSteps.length === 0) return 0;
     const currentStepData = algorithmSteps[currentStep];
-    if (!currentStepData || !currentStepData.edgeFlows) return 0; // Defensive check
-    
-    // This calculation works for all algorithms
+    if (!currentStepData || !currentStepData.edgeFlows) return 0;
     return initialEdges
         .filter(e => e.source === 's')
         .reduce((sum, e) => sum + (currentStepData.edgeFlows[e.id] || 0), 0);
@@ -257,13 +337,10 @@ function VisualizePage() {
   const handleReset = () => setCurrentStep(-1);
   
   const currentStepInfo = (currentStep >= 0 && algorithmSteps.length > 0) ? algorithmSteps[currentStep] : { description: "Generate a graph or load the default to begin." };
+  const isFinished = currentStep === algorithmSteps.length - 1;
 
   return (
-    <div className="app-container">
-      <header className="header">
-        <h1>Max-Flow Algorithm Visualization 💡</h1>
-        <p>Compare max-flow algorithms step-by-step.</p>
-      </header>
+    <div className="viz-page-container">
       <div className="main-content">
         <div className="graph-container">
           <ReactFlow
@@ -272,6 +349,7 @@ function VisualizePage() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             fitView
+            proOptions={{ hideAttribution: true }}
           >
             <MiniMap />
             <Controls />
@@ -287,19 +365,34 @@ function VisualizePage() {
           >
             <option value="fordFulkerson">Ford-Fulkerson (BFS)</option>
             <option value="dinic">Dinic's Algorithm</option>
-            {/* --- KEY CHANGE: Add Push-Relabel --- */}
             <option value="pushRelabel">Push-Relabel</option>
-            {/* --- END KEY CHANGE --- */}
           </select>
+
+          <AlgorithmContext algorithm={selectedAlgorithm} />
           
           <h2>Graph Input</h2>
+          <select 
+            className="preset-select" 
+            value={selectedPreset} 
+            onChange={handlePresetChange}
+          >
+            <option value="default">Classic Graph</option>
+            <option value="ff-worst-case">FF Worst-Case</option>
+            <option value="dense-graph">Dense Graph</option>
+            <option value="custom">-- Custom Input --</option>
+          </select>
+
           <div className="input-area">
+            {/* --- KEY UX CHANGE: Hook up the <textarea> --- */}
             <textarea
               value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              rows="10"
+              onChange={handleTextareaChange}
+              readOnly={selectedPreset !== 'custom'}
+              className={selectedPreset !== 'custom' ? 'locked' : ''}
+              rows="8"
               placeholder="Enter edge list, e.g.&#10;s,a,10&#10;a,t,10"
             ></textarea>
+            {/* --- END KEY UX CHANGE --- */}
             <button className="generate-btn" onClick={handleGenerateGraph}>Generate & Run</button>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
           </div>
@@ -307,17 +400,26 @@ function VisualizePage() {
           <h2>Controls & Information</h2>
           <div className="buttons">
             <button onClick={handlePrev} disabled={currentStep < 0}>Previous</button>
-            <button onClick={handleNext} disabled={currentStep >= algorithmSteps.length - 1 || algorithmSteps.length === 0}>Next</button>
+            <button onClick={handleNext} disabled={isFinished || algorithmSteps.length === 0}>Next</button>
             <button onClick={handleReset} disabled={algorithmSteps.length === 0}>Reset</button>
-          </div>
-          <div className="info-box">
-            <h3>Step {currentStep < 0 ? 0 : currentStep + 1} / {algorithmSteps.length}</h3>
-            <p>{currentStepInfo.description}</p>
           </div>
           <div className="flow-box">
             <h3>Maximum Flow So Far</h3>
             <p className="flow-value">{maxFlow}</p>
           </div>
+          <div className={`info-box step-info ${isFinished ? 'finished' : ''}`}>
+            <h3>Step {currentStep < 0 ? 0 : currentStep + 1} / {algorithmSteps.length}</h3>
+            <p>{currentStepInfo.description}</p>
+          </div>
+
+          {currentStep >= 0 && (
+            <LiveStats 
+              steps={algorithmSteps} 
+              currentStep={currentStep} 
+              algorithm={selectedAlgorithm} 
+            />
+          )}
+
         </div>
       </div>
     </div>

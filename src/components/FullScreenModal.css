@@ -1,0 +1,104 @@
+/*
+ * src/components/FullScreenModal.css
+ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: white;
+  width: 95%;
+  height: 95%;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-viz-container {
+  flex-grow: 1;
+  /* This will contain the fullscreen VisualizationInstance */
+  /* We need to override its compact styles */
+}
+
+.modal-viz-container .viz-instance-container.mode-fullscreen {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
+
+/* Make fullscreen nodes/labels bigger */
+.modal-viz-container .react-flow__node {
+  font-size: 14px !important;
+  padding: 8px !important;
+}
+.modal-viz-container .react-flow__edge-text {
+  font-size: 12px !important;
+}
+
+
+.modal-controls {
+  flex-shrink: 0;
+  display: flex;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border-top: 1px solid #ccc;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.modal-controls button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  background-color: #3498db;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.modal-controls button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+.modal-controls button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.modal-controls .modal-step-counter {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  padding: 0 1rem;
+}
+
+.modal-controls .modal-reset-btn {
+  background-color: #f39c12;
+}
+.modal-controls .modal-reset-btn:hover:not(:disabled) {
+  background-color: #e67e22;
+}
+
+.modal-controls .modal-close-btn {
+  background-color: #e74c3c;
+  position: absolute;
+  right: 30px;
+}
+.modal-controls .modal-close-btn:hover:not(:disabled) {
+  background-color: #c0392b;
+}

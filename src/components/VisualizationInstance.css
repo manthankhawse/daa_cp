@@ -25,6 +25,7 @@
   text-align: center;
   background-color: #34495e;
   color: white;
+  flex-shrink: 0;
 }
 
 .viz-reactflow-wrapper {
@@ -33,7 +34,7 @@
   background-color: #fdfdfd;
 }
 
-/* Make ReactFlow controls smaller */
+/* ... (ReactFlow styles are the same) ... */
 .viz-reactflow-wrapper .react-flow__minimap {
   bottom: 5px;
   right: 5px;
@@ -41,20 +42,20 @@
 .viz-reactflow-wrapper .react-flow__background {
   background-size: 20px 20px;
 }
-
-/* Smaller node labels for the compact view */
 .viz-reactflow-wrapper .react-flow__node {
   font-size: 10px !important;
   white-space: pre-wrap !important;
   text-align: center;
   padding: 4px;
 }
-
-/* Smaller edge labels */
 .viz-reactflow-wrapper .react-flow__edge-text {
   font-size: 10px;
   font-weight: 600;
 }
+
+/* ----------------------------- */
+/* New Info Bar Styles */
+/* ----------------------------- */
 
 .viz-info-bar {
   flex-shrink: 0;
@@ -63,33 +64,197 @@
   border-top: 1px solid #bdc3c7;
 }
 
-.viz-info-box {
-  flex: 1;
+.viz-info-box.description {
+  flex: 2;
   padding: 0.5rem;
-  text-align: center;
+  text-align: left;
   border-right: 1px solid #bdc3c7;
 }
-.viz-info-box:last-child {
-  border-right: none;
-}
-
-.viz-info-box span {
+.viz-info-box.description span {
   font-size: 0.75rem;
   font-weight: 600;
   color: #7f8c8d;
   text-transform: uppercase;
 }
-.viz-info-box p {
-  font-size: 1rem;
+.viz-info-box.description p {
+  font-size: 0.9rem;
   font-weight: 700;
   color: #2c3e50;
   margin: 0.25rem 0 0 0;
-  
-  /* For long descriptions */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+.viz-stats-hud {
+  flex: 1;
+  padding: 0.5rem;
+  border-right: 1px solid #bdc3c7;
+}
+.viz-stats-hud:last-child {
+  border-right: none;
+}
+.viz-stats-hud h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  margin: 0 0 0.25rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #bdc3c7;
+}
+.viz-stats-hud ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.viz-stats-hud li {
+  font-size: 0.9rem;
+  color: #34495e;
+}
+.viz-stats-hud li strong {
+  color: #2c3e50;
+}
+
+/*
+ * src/components/VisualizationInstance.css
+ */
+
+.viz-instance-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  min-width: 300px; /* Don't get squished too small */
+}
+
+.viz-instance-container.finished {
+  border-color: #27ae60;
+}
+
+.viz-title {
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 1.1rem;
+  text-align: center;
+  background-color: #34495e;
+  color: white;
+  flex-shrink: 0;
+  position: relative; /* For positioning the button */
+}
+
+/* --- KEY ADDITION: Focus Button --- */
+.viz-focus-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+.viz-focus-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+/* Hide the button if this instance is already focused */
+.viz-focused .viz-focus-btn {
+  display: none;
+}
+/* --- END KEY ADDITION --- */
+
+
+.viz-reactflow-wrapper {
+  flex-grow: 1;
+  position: relative;
+  background-color: #fdfdfd;
+}
+
+/* ... (ReactFlow styles are unchanged) ... */
+.viz-reactflow-wrapper .react-flow__minimap {
+  bottom: 5px;
+  right: 5px;
+}
+.viz-reactflow-wrapper .react-flow__background {
+  background-size: 20px 20px;
+}
+.viz-reactflow-wrapper .react-flow__node {
+  font-size: 10px !important;
+  white-space: pre-wrap !important;
+  text-align: center;
+  padding: 4px;
+}
+.viz-reactflow-wrapper .react-flow__edge-text {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ... (Info bar and stats styles are unchanged) ... */
+.viz-info-bar {
+  flex-shrink: 0;
+  display: flex;
+  background-color: #ecf0f1;
+  border-top: 1px solid #bdc3c7;
+}
 .viz-info-box.description {
-  flex: 2; /* Give more space for description */
+  flex: 2;
+  padding: 0.5rem;
+  text-align: left;
+  border-right: 1px solid #bdc3c7;
+}
+.viz-info-box.description span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+}
+.viz-info-box.description p {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0.25rem 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.viz-stats-hud {
+  flex: 1;
+  padding: 0.5rem;
+  border-right: 1px solid #bdc3c7;
+}
+.viz-stats-hud:last-child {
+  border-right: none;
+}
+.viz-stats-hud h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  margin: 0 0 0.25rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #bdc3c7;
+}
+.viz-stats-hud ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.viz-stats-hud li {
+  font-size: 0.9rem;
+  color: #34495e;
+}
+.viz-stats-hud li strong {
+  color: #2c3e50;
 }

@@ -1,13 +1,13 @@
 /*
  * src/pages/ComparePage.css
- * Styles for the side-by-side comparison page.
  */
 
 .compare-page-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 70px); /* Full height minus navbar */
+  height: calc(100vh - 70px); 
   background-color: #f4f7f6;
+  overflow: hidden;
 }
 
 /* ----------------------------- */
@@ -24,12 +24,17 @@
   gap: 1.5rem;
 }
 
-.compare-input-area {
+/* --- REMOVED .compare-input-wrapper.faded --- */
+.compare-input-wrapper {
   flex: 2;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* ... (rest of control bar styles are unchanged) ... */
+.compare-input-area {
   display: flex;
   gap: 1rem;
 }
-
 .compare-input-area textarea {
   width: 100%;
   padding: 0.5rem;
@@ -39,9 +44,13 @@
   font-size: 0.9rem;
   resize: vertical;
 }
-
+.input-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .compare-generate-btn {
-  padding: 0 1.5rem;
+  padding: 1rem;
   font-size: 1rem;
   font-weight: bold;
   border: none;
@@ -58,15 +67,31 @@
   background-color: #95a5a6;
   cursor: not-allowed;
 }
-
+.preset-select {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #bdc3c7;
+}
+.preset-select option[value="custom"] {
+  font-style: italic;
+  font-weight: bold;
+  color: #000;
+  background-color: #eee;
+}
+.compare-input-area textarea.locked {
+  background-color: #f0f0f0;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
 .compare-step-controls {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
+  align-self: center;
 }
-
 .compare-step-controls button {
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
@@ -91,7 +116,6 @@
 .compare-step-controls .reset-btn:hover:not(:disabled) {
   background-color: #c0392b;
 }
-
 .step-counter {
   font-size: 1.1rem;
   font-weight: 600;
@@ -100,13 +124,13 @@
   min-width: 60px;
   text-align: center;
 }
-
 .compare-error-msg {
   color: #c0392b;
   font-weight: bold;
   margin: 0;
   padding: 0.5rem;
 }
+/* --- REMOVED .back-btn style --- */
 
 /* ----------------------------- */
 /* Visualization Area Styles */
@@ -118,7 +142,8 @@
   gap: 0.5rem;
   padding: 0.5rem;
   background-color: #bdc3c7;
-  overflow: hidden; /* Important for flex children */
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
 }
 
 .viz-placeholder {
@@ -134,4 +159,19 @@
 .viz-placeholder h2 {
   color: #7f8c8d;
   font-weight: 300;
+}
+
+/* --- REMOVED .viz-faded AND .viz-focused --- */
+
+/* ... (AnalysisDisplay styles are unchanged) ... */
+.compare-analysis-area {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-top: 2px solid #bdc3c7;
+  padding: 1.5rem;
+  min-height: 240px; 
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  gap: 2rem;
 }
